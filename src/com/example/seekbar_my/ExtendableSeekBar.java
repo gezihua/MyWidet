@@ -1,20 +1,14 @@
-
 package com.example.seekbar_my;
 
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.graphics.drawable.Drawable;
-import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.shapes.OvalShape;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.View.OnClickListener;
 import android.view.View.OnTouchListener;
-import android.widget.SeekBar;
 
 public class ExtendableSeekBar extends View implements OnTouchListener {
     private final int DEFAULT_BAR_MAX = 100;
@@ -22,15 +16,17 @@ public class ExtendableSeekBar extends View implements OnTouchListener {
     private final int DEFAULT_LINE_GRAY = 0xff9c9c9c;
     private ShapeDrawable mThumb;
     private ExtendableSeekBarChangedListener mExtendableSeekBarChangedListener;
-    private int mPaddingLeft = 10;
-    private int mPaddingRight = 10;
+    private boolean isTouchable = true;
+    private int mPaddingLeft = 5;
+    private int mCurBarColor = DEFAULT_LINE_GRAY;
+    private int mPaddingRight = 5;
     private int mMax = DEFAULT_BAR_MAX;
     private int mProgress = 0;
     private int mDrawStart = 10;
     private int mDrawEnd;
     private int mDrawCurX = 50;
     private int mDrawCurY;
-    private int mWidth = 500;
+    private int mWidth = 350;
     private int mHeight = 100;
     private int mThumbSize = 30;
     private boolean isOVerBar = false;
@@ -62,9 +58,15 @@ public class ExtendableSeekBar extends View implements OnTouchListener {
         int size = mThumbSize / 2;
         if (mDrawCurX < mPaddingLeft + mThumbSize / 2) {
             // Draw the thumb off
-            mThumb.getPaint().setColor(DEFAULT_LINE_GRAY);
+            mThumb.getPaint().setColor(mCurBarColor);
             mThumb.setBounds(mPaddingLeft, mHeight / 2 - size, mPaddingLeft + mThumbSize, mHeight
                     / 2 + size);
+        } else if (mDrawCurX > mWidth + mThumbSize / 2 - mPaddingRight) {
+            mThumb.getPaint().setColor(mCurBarColor);
+            mThumb.setBounds(mWidth - mPaddingRight / 2 - mThumbSize / 2, mHeight / 2 - size,
+                    mWidth
+                            + mThumbSize / 2 - mPaddingRight / 2, mHeight
+                            / 2 + size);
         } else {
             // Draw the thumb on
             mThumb.getPaint().setColor(DEFAULT_THUMB_COLOR);
@@ -81,16 +83,22 @@ public class ExtendableSeekBar extends View implements OnTouchListener {
         mDrawCurY = (int) event.getY();
         mDrawCurX = (int) event.getX();
         int drag = 0;
+        if(mExtendableSeekBarChangedListener != null && !isTouchable){
+            return false;
+        }
         if (mDrawCurX > mWidth + mThumbSize / 2 - mPaddingRight) {
+            invalidate();
+            mCurBarColor = DEFAULT_THUMB_COLOR;
             isOVerBar = true;
             drag = mMax;
-        }else if (mDrawCurX < mPaddingLeft + mThumbSize / 2) {
+        } else if (mDrawCurX < mPaddingLeft + mThumbSize / 2) {
             invalidate();
+            mCurBarColor = DEFAULT_LINE_GRAY;
             isOVerBar = true;
             drag = 0;
         } else {
             isOVerBar = false;
-            drag = (int)(((float)mDrawCurX / mWidth) * mMax);
+            drag = (int) (((float) mDrawCurX / mWidth) * mMax);
         }
         switch (action) {
             case MotionEvent.ACTION_DOWN: {
@@ -128,8 +136,9 @@ public class ExtendableSeekBar extends View implements OnTouchListener {
         Paint paint = new Paint();
         paint.setStrokeWidth(5);
         if (isOVerBar) {
-            paint.setColor(DEFAULT_LINE_GRAY);
-            canvas.drawLine(mDrawStart, mHeight / 2, mWidth - mPaddingRight, mHeight / 2, paint);
+            paint.setColor(mCurBarColor);
+            canvas.drawLine(mPaddingLeft + mDrawStart, mHeight / 2, mWidth - mPaddingRight,
+                    mHeight / 2, paint);
         } else {
             paint.setColor(DEFAULT_THUMB_COLOR);
             canvas.drawLine(mPaddingLeft + mDrawStart, mHeight / 2, mDrawCurX, mHeight / 2, paint);
@@ -142,12 +151,14 @@ public class ExtendableSeekBar extends View implements OnTouchListener {
     private void setMax(int max) {
         this.mMax = max;
     }
+
     public int getmProgress() {
         return mProgress;
     }
 
     public void setmProgress(int mProgress) {
         this.mProgress = mProgress;
+        this.mDrawCurX = (int) (((float) mProgress / mMax) * mWidth);
     }
 
     public interface ExtendableSeekBarChangedListener {
@@ -156,6 +167,15 @@ public class ExtendableSeekBar extends View implements OnTouchListener {
         void onStartTrackingTouch(ExtendableSeekBar seekBar);
 
         void onStopTrackingTouch(ExtendableSeekBar seekBar);
+
     }
 
+    public void setmExtendableSeekBarChangedListener(
+            ExtendableSeekBarChangedListener mExtendableSeekBarChangedListener) {
+        this.mExtendableSeekBarChangedListener = mExtendableSeekBarChangedListener;
+    }
+
+    public void setTouchable(boolean flag){
+        this.isTouchable = flag;
+    }
 }
